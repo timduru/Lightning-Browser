@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.sqlite.SQLiteException;
 import android.graphics.Bitmap;
@@ -61,7 +62,6 @@ import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
-import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Transformation;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -105,6 +105,7 @@ import acr.browser.lightning.bus.TabEvents;
 import acr.browser.lightning.constant.BookmarkPage;
 import acr.browser.lightning.constant.Constants;
 import acr.browser.lightning.constant.HistoryPage;
+import acr.browser.lightning.pie.PieControl;
 import acr.browser.lightning.controller.UIController;
 import acr.browser.lightning.database.BookmarkManager;
 import acr.browser.lightning.database.HistoryDatabase;
@@ -128,7 +129,7 @@ import acr.browser.lightning.view.SearchView;
 import butterknife.Bind;
 import butterknife.ButterKnife;
 
-public abstract class BrowserActivity extends ThemableBrowserActivity implements BrowserView, UIController, OnClickListener, OnLongClickListener {
+public abstract class BrowserActivity extends ThemableBrowserActivity implements BrowserView, UIController, OnClickListener, OnLongClickListener  {
 
     private static final String TAG = BrowserActivity.class.getSimpleName();
 
@@ -209,6 +210,9 @@ public abstract class BrowserActivity extends ThemableBrowserActivity implements
     private BrowserPresenter mPresenter;
     private TabsView mTabsView;
 
+
+    private PieControl mPieControl;
+
     // Proxy
     @Inject ProxyUtils mProxyUtils;
 
@@ -237,6 +241,8 @@ public abstract class BrowserActivity extends ThemableBrowserActivity implements
 
         mTabsManager = new TabsManager();
         mPresenter = new BrowserPresenter(this, isIncognito());
+
+        mPieControl = new PieControl(this, null);
 
         initialize(savedInstanceState);
     }
@@ -532,10 +538,11 @@ public abstract class BrowserActivity extends ThemableBrowserActivity implements
 
         @Override
         public void onDrawerClosed(View v) {
+            int lockstate = !mPreferences.getPie()? DrawerLayout.LOCK_MODE_UNLOCKED : DrawerLayout.LOCK_MODE_LOCKED_CLOSED;
             if (v == mDrawerRight && mShowTabsInDrawer) {
-                mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED, mDrawerLeft);
+                mDrawerLayout.setDrawerLockMode(lockstate, mDrawerLeft);
             } else {
-                mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED, mDrawerRight);
+                mDrawerLayout.setDrawerLockMode(lockstate, mDrawerRight);
             }
         }
 
@@ -591,7 +598,19 @@ public abstract class BrowserActivity extends ThemableBrowserActivity implements
 
     private void initializePreferences() {
         final LightningView currentView = mTabsManager.getCurrentTab();
-        mFullScreen = mPreferences.getFullScreenEnabled();
+        if(mPreferences.getPie())
+        {
+            mPieControl.attachToContainer(mBrowserFrame);
+            mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED, mSwapBookmarksAndTabs ? mDrawerLeft : mDrawerRight );
+        }
+        else
+        {
+            mPieControl.removeFromContainer(mBrowserFrame);
+            mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED, mSwapBookmarksAndTabs ? mDrawerLeft : mDrawerRight );
+        }
+
+
+            mFullScreen = mPreferences.getFullScreenEnabled();
         boolean colorMode = mPreferences.getColorModeEnabled();
         colorMode &= !mDarkTheme;
         if (!isIncognito() && !colorMode && !mDarkTheme && mWebpageBitmap != null) {
@@ -714,10 +733,20 @@ public abstract class BrowserActivity extends ThemableBrowserActivity implements
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action buttons
+        boolean res = triggerAction(item.getItemId());
+        if(!res) res  = super.onOptionsItemSelected(item);
+        return res;
+    }
+
+    public void focusSearchBar() {
+        mSearch.requestFocus();
+    }
+
+        public boolean triggerAction(int actionid) {
         final LightningView currentView = mTabsManager.getCurrentTab();
         final String currentUrl = currentView != null ? currentView.getUrl() : null;
-        // Handle action buttons
-        switch (item.getItemId()) {
+        switch (actionid) {
             case android.R.id.home:
                 if (mDrawerLayout.isDrawerOpen(mDrawerRight)) {
                     mDrawerLayout.closeDrawer(mDrawerRight);
@@ -789,8 +818,9 @@ public abstract class BrowserActivity extends ThemableBrowserActivity implements
                 }
                 return true;
             default:
-                return super.onOptionsItemSelected(item);
+                return false;
         }
+
     }
 
     // By using a manager, adds a bookmark and notifies third parties about that
@@ -1089,7 +1119,7 @@ public abstract class BrowserActivity extends ThemableBrowserActivity implements
     }
 
     // TODO move this to presenter
-    private synchronized void deleteTab(int position) {
+    public synchronized void deleteTab(int position) {
         mPresenter.deleteTab(position);
     }
 

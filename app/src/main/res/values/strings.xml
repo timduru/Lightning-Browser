@@ -258,4 +258,5 @@
     <string name="dialog_rename_folder">Rename folder</string>
     <string name="dialog_remove_folder">Remove folder</string>
     <string name="dialog_title_close_browser">Close browser</string>
+    <string name="pieControl">Enable Pie Control on sides of screen</string>
 </resources>

@@ -366,6 +366,7 @@ public class LightningView {
         if (mWebView == null) {
             return;
         }
+
         final WebSettings settings = mWebView.getSettings();
         if (API < Build.VERSION_CODES.JELLY_BEAN_MR2) {
             //noinspection deprecation

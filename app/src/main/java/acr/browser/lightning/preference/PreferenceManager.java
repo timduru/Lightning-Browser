@@ -55,6 +55,7 @@ public class PreferenceManager {
         public static final String IDENTIFYING_HEADERS = "removeIdentifyingHeaders";
         public static final String SWAP_BOOKMARKS_AND_TABS = "swapBookmarksAndTabs";
         public static final String SEARCH_SUGGESTIONS = "searchSuggestions";
+        public static final String PIE = "piecontrol";
 
         public static final String USE_PROXY = "useProxy";
         public static final String PROXY_CHOICE = "proxyChoice";
@@ -101,6 +102,10 @@ public class PreferenceManager {
     public void setBookmarkAndTabsSwapped(boolean swap) {
         putBoolean(Name.SWAP_BOOKMARKS_AND_TABS, swap);
     }
+
+    public boolean getPie() { return mPrefs.getBoolean(Name.PIE, false); }
+    public void setPie(boolean val) { putBoolean(Name.PIE, val); }
+
 
     public boolean getAdBlockEnabled() {
         return mPrefs.getBoolean(Name.BLOCK_ADS, false);

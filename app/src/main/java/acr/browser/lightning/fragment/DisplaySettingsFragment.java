@@ -21,6 +21,7 @@ import android.widget.TextView;
 
 import acr.browser.lightning.R;
 import acr.browser.lightning.dialog.BrowserDialog;
+import acr.browser.lightning.utils.Utils;
 
 public class DisplaySettingsFragment extends LightningPreferenceFragment implements Preference.OnPreferenceClickListener, Preference.OnPreferenceChangeListener {
 
@@ -33,6 +34,7 @@ public class DisplaySettingsFragment extends LightningPreferenceFragment impleme
     private static final String SETTINGS_TEXTSIZE = "text_size";
     private static final String SETTINGS_DRAWERTABS = "cb_drawertabs";
     private static final String SETTINGS_SWAPTABS = "cb_swapdrawers";
+    private static final String SETTINGS_PIE = "piecontrol";
 
     private static final float XXLARGE = 30.0f;
     private static final float XLARGE = 26.0f;
@@ -72,6 +74,7 @@ public class DisplaySettingsFragment extends LightningPreferenceFragment impleme
         cbreflow = (CheckBoxPreference) findPreference(SETTINGS_REFLOW);
         CheckBoxPreference cbDrawerTabs = (CheckBoxPreference) findPreference(SETTINGS_DRAWERTABS);
         CheckBoxPreference cbSwapTabs = (CheckBoxPreference) findPreference(SETTINGS_SWAPTABS);
+        CheckBoxPreference cbPie = (CheckBoxPreference) findPreference(SETTINGS_PIE);
 
         theme.setOnPreferenceClickListener(this);
         textsize.setOnPreferenceClickListener(this);
@@ -82,6 +85,7 @@ public class DisplaySettingsFragment extends LightningPreferenceFragment impleme
         cbreflow.setOnPreferenceChangeListener(this);
         cbDrawerTabs.setOnPreferenceChangeListener(this);
         cbSwapTabs.setOnPreferenceChangeListener(this);
+        cbPie.setOnPreferenceChangeListener(this);
 
         cbstatus.setChecked(mPreferenceManager.getHideStatusBarEnabled());
         cbfullscreen.setChecked(mPreferenceManager.getFullScreenEnabled());
@@ -90,6 +94,7 @@ public class DisplaySettingsFragment extends LightningPreferenceFragment impleme
         cbreflow.setChecked(mPreferenceManager.getTextReflowEnabled());
         cbDrawerTabs.setChecked(mPreferenceManager.getShowTabsInDrawer(true));
         cbSwapTabs.setChecked(mPreferenceManager.getBookmarksAndTabsSwapped());
+        cbPie.setChecked(mPreferenceManager.getPie());
 
         theme.setSummary(mThemeOptions[mPreferenceManager.getUseTheme()]);
     }
@@ -141,6 +146,9 @@ public class DisplaySettingsFragment extends LightningPreferenceFragment impleme
                 return true;
             case SETTINGS_SWAPTABS:
                 mPreferenceManager.setBookmarkAndTabsSwapped(checked);
+                return true;
+            case SETTINGS_PIE:
+                mPreferenceManager.setPie(checked);
                 return true;
             default:
                 return false;
