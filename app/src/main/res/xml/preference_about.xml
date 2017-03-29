@@ -21,7 +21,7 @@
     <PreferenceCategory android:title="@string/licenses">
         <Preference
             android:summary="@string/mpl_license"
-            android:title="@string/app_name">
+            android:title="@string/app_name_old">
             <intent
                 android:action="android.intent.action.VIEW"
                 android:data="http://www.mozilla.org/MPL/2.0/">
