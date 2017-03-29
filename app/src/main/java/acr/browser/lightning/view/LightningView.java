@@ -32,6 +32,10 @@ import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebSettings.PluginState;
 import android.webkit.WebView;
 
+import com.anthonycr.bonsai.Single;
+import com.anthonycr.bonsai.SingleAction;
+import com.anthonycr.bonsai.SingleOnSubscribe;
+import com.anthonycr.bonsai.SingleSubscriber;
 import com.squareup.otto.Bus;
 
 import java.io.File;
@@ -51,11 +55,7 @@ import acr.browser.lightning.dialog.LightningDialogBuilder;
 import acr.browser.lightning.download.LightningDownloadListener;
 import acr.browser.lightning.preference.PreferenceManager;
 
-import com.anthonycr.bonsai.Action;
-import com.anthonycr.bonsai.Observable;
 import com.anthonycr.bonsai.Schedulers;
-import com.anthonycr.bonsai.Subscriber;
-import com.anthonycr.bonsai.OnSubscribe;
 
 import acr.browser.lightning.utils.ProxyUtils;
 import acr.browser.lightning.utils.UrlUtils;
@@ -406,59 +406,51 @@ public class LightningView {
             settings.setAllowUniversalAccessFromFileURLs(false);
         }
 
-        getPathObservable("appcache")
-            .subscribeOn(Schedulers.io())
-            .observeOn(Schedulers.main())
-            .subscribe(new OnSubscribe<File>() {
-                @Override
-                public void onNext(File item) {
-                    settings.setAppCachePath(item.getPath());
-                }
-
-                @Override
-                public void onComplete() {}
-            });
+        getPathObservable("appcache").subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.main())
+                .subscribe(new SingleOnSubscribe<File>() {
+                    @Override
+                    public void onItem(@Nullable File item) {
+                        settings.setAppCachePath(item.getPath());
+                    }
+                });
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-            getPathObservable("geolocation")
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.main())
-                .subscribe(new OnSubscribe<File>() {
-                    @Override
-                    public void onNext(File item) {
-                        //noinspection deprecation
-                        settings.setGeolocationDatabasePath(item.getPath());
-                    }
-
-                    @Override
-                    public void onComplete() {}
-                });
+            getPathObservable("geolocation").subscribeOn(Schedulers.io())
+                    .observeOn(Schedulers.main())
+                    .subscribe(new SingleOnSubscribe<File>() {
+                        @Override
+                        public void onItem(@Nullable File item) {
+                            //noinspection deprecation
+                            settings.setGeolocationDatabasePath(item.getPath());
+                        }
+                    });
         }
 
-        getPathObservable("databases")
-            .subscribeOn(Schedulers.io())
-            .observeOn(Schedulers.main())
-            .subscribe(new OnSubscribe<File>() {
-                @Override
-                public void onNext(File item) {
-                    if (API < Build.VERSION_CODES.KITKAT) {
-                        //noinspection deprecation
-                        settings.setDatabasePath(item.getPath());
+        getPathObservable("databases").subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.main())
+                .subscribe(new SingleOnSubscribe<File>() {
+                    @Override
+                    public void onItem(@Nullable File item) {
+                        if (API < Build.VERSION_CODES.KITKAT) {
+                            //noinspection deprecation
+                            settings.setDatabasePath(item.getPath());
+                        }
                     }
-                }
 
-                @Override
-                public void onComplete() {}
-            });
+                    @Override
+                    public void onComplete() {
+                    }
+                });
 
     }
 
-    private Observable<File> getPathObservable(final String subFolder) {
-        return Observable.create(new Action<File>() {
+    private Single<File> getPathObservable(final String subFolder) {
+        return Single.create(new SingleAction<File>() {
             @Override
-            public void onSubscribe(@NonNull Subscriber<File> subscriber) {
+            public void onSubscribe(@NonNull SingleSubscriber<File> subscriber) {
                 File file = BrowserApp.get(mActivity).getDir(subFolder, 0);
-                subscriber.onNext(file);
+                subscriber.onItem(file);
                 subscriber.onComplete();
             }
         });
@@ -797,7 +789,7 @@ public class LightningView {
      */
     public synchronized void reload() {
         // Check if configured proxy is available
-        if (!mProxyUtils.isProxyReady()) {
+        if (!mProxyUtils.isProxyReady(mActivity)) {
             // User has been notified
             return;
         }
@@ -1053,7 +1045,7 @@ public class LightningView {
      */
     public synchronized void loadUrl(@NonNull String url) {
         // Check if configured proxy is available
-        if (!mProxyUtils.isProxyReady()) {
+        if (!mProxyUtils.isProxyReady(mActivity)) {
             return;
         }
 
