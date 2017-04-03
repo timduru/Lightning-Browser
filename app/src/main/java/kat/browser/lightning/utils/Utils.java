@@ -38,6 +38,7 @@ import com.anthonycr.grant.PermissionsManager;
 import com.anthonycr.grant.PermissionsResultAction;
 
 import java.io.Closeable;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -431,4 +432,19 @@ public final class Utils {
         Utils.showSnackbar(activity, R.string.message_added_to_homescreen);
     }
 
+    public static void runAsRoot(String[] cmds){
+        try
+        {
+            Process p = Runtime.getRuntime().exec("su");
+            DataOutputStream os = new DataOutputStream(p.getOutputStream());
+            for (String cmd : cmds)
+                os.writeBytes(cmd+"\n");
+            os.writeBytes("exit\n");
+            os.flush();
+            p.waitFor();
+        } catch (Exception e)
+        {
+            Log.e("TTT", "runAsRoot:", e);
+        }
+    }
 }

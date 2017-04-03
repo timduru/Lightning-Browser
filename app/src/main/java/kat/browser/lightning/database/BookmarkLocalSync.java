@@ -1,5 +1,6 @@
 package kat.browser.lightning.database;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
@@ -12,10 +13,18 @@ import com.anthonycr.bonsai.Single;
 import com.anthonycr.bonsai.SingleAction;
 import com.anthonycr.bonsai.SingleSubscriber;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import kat.browser.lightning.utils.Utils;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class BookmarkLocalSync {
 
@@ -25,6 +34,13 @@ public class BookmarkLocalSync {
     private static final String CHROME_BOOKMARKS_CONTENT = "content://com.android.chrome.browser/bookmarks";
     private static final String CHROME_BETA_BOOKMARKS_CONTENT = "content://com.chrome.beta.browser/bookmarks";
     private static final String CHROME_DEV_BOOKMARKS_CONTENT = "content://com.chrome.dev.browser/bookmarks";
+
+    @SuppressLint("SdCardPath")
+    private static final String CHROME_BOOKMARKS_FILEPATH = "/data/data/com.android.chrome/app_chrome/Default/Bookmarks";
+    @SuppressLint("SdCardPath")
+    private static final String CHROME_BETA_BOOKMARKS_FILEPATH = "/data/data/com.chrome.beta/app_chrome/Default/Bookmarks";
+    @SuppressLint("SdCardPath")
+    private static final String CHROME_DEV_BOOKMARKS_FILEPATH = "/data/data/com.chrome.dev/app_chrome/Default/Bookmarks";
 
     private static final String COLUMN_TITLE = "title";
     private static final String COLUMN_URL = "url";
@@ -94,7 +110,7 @@ public class BookmarkLocalSync {
         return Single.create(new SingleAction<List<Source>>() {
             @Override
             public void onSubscribe(@NonNull SingleSubscriber<List<Source>> subscriber) {
-                List<Source> sources = new ArrayList<>(1);
+                List<Source> sources = new ArrayList<>();
                 if (isBrowserSupported(STOCK_BOOKMARKS_CONTENT)) {
                     sources.add(Source.STOCK);
                 }
@@ -126,22 +142,26 @@ public class BookmarkLocalSync {
         return getBookmarksFromContentUri(STOCK_BOOKMARKS_CONTENT);
     }
 
-    @NonNull
-    @WorkerThread
-    public List<HistoryItem> getBookmarksFromChrome() {
-        return getBookmarksFromContentUri(CHROME_BOOKMARKS_CONTENT);
-    }
 
     @NonNull
     @WorkerThread
+    public List<HistoryItem> getBookmarksFromChrome() {
+        return getBookmarksFromChromeFile(CHROME_BOOKMARKS_FILEPATH);
+//        return getBookmarksFromContentUri(CHROME_BOOKMARKS_CONTENT);
+    }
+
+@NonNull
+    @WorkerThread
     public List<HistoryItem> getBookmarksFromChromeBeta() {
-        return getBookmarksFromContentUri(CHROME_BETA_BOOKMARKS_CONTENT);
+        return getBookmarksFromChromeFile(CHROME_BETA_BOOKMARKS_FILEPATH);
+        //return getBookmarksFromContentUri(CHROME_BETA_BOOKMARKS_CONTENT);
     }
 
     @NonNull
     @WorkerThread
     public List<HistoryItem> getBookmarksFromChromeDev() {
-        return getBookmarksFromContentUri(CHROME_DEV_BOOKMARKS_CONTENT);
+        return getBookmarksFromChromeFile(CHROME_DEV_BOOKMARKS_FILEPATH);
+        //return getBookmarksFromContentUri(CHROME_DEV_BOOKMARKS_CONTENT);
     }
 
     @WorkerThread
@@ -202,6 +222,81 @@ public class BookmarkLocalSync {
             }
             cursor.close();
         }
+    }
+
+    private void addChromeJSONTree(String parentName, JSONObject tree, List<HistoryItem> list) {
+        try
+        {
+            String maintype = tree.getString("type"); //"folder", "url"
+            String folderName = null;
+            if (maintype.equals("folder")) folderName = tree.getString("name");
+            String folderCrumbs = (!parentName.equals("")? parentName +"\\":"") +  folderName;
+
+            JSONArray children = tree.getJSONArray("children");
+
+            if(children != null)
+                for (int i = 0; i < children.length(); i++)
+                {
+                    JSONObject node = children.getJSONObject(i);
+                    String name = node.getString("name");
+                    String type = node.getString("type"); //"folder", "url"
+
+                    String url = null;
+                    if (type.equals("url")) url = node.getString("url");
+                    else if (type.equals("folder")) addChromeJSONTree(folderCrumbs, node, list);
+
+                    if (url != null)
+                    {
+                        HistoryItem item = new HistoryItem(url, name);
+                        if(folderName != null) item.setFolder( folderCrumbs);
+                        list.add(item);
+                    }
+                }
+        }
+        catch (Exception e) {Log.e(TAG, "",e);}
+    }
+
+
+    @NonNull
+    @WorkerThread
+    private List<HistoryItem> getBookmarksFromChromeFile(String path) {
+        List<HistoryItem> list = new ArrayList<>();
+        StringBuilder sBookmark = new StringBuilder();
+
+        String targetFilePath = mContext.getFilesDir().getPath() + "/" + "Bookmarks";
+        Utils.runAsRoot(new String[] {"/system/bin/cp " + path + " " + targetFilePath
+                , "/system/bin/chmod 755 " + targetFilePath
+        });
+
+        try {
+            File file = new File(targetFilePath);
+            InputStream inputStream = new FileInputStream(file);
+            BufferedReader r = new BufferedReader(new InputStreamReader(inputStream));
+            String line;
+            while ((line = r.readLine()) != null)
+                sBookmark.append(line);
+        }catch (Exception e) { Log.e(TAG,"getBookmarksFromChromeFile",e );}
+
+        JSONObject jsonBook;
+        try {
+            jsonBook = new JSONObject(sBookmark.toString());
+            JSONObject root = jsonBook.getJSONObject("roots");
+
+            Iterator<String> it = root.keys();
+            while (it.hasNext()) {
+                String key = it.next();
+
+                try{
+                    addChromeJSONTree("",root.getJSONObject(key), list);}
+                catch(Exception e) { Log.w(TAG, "",e); }
+            }
+        }
+        catch (Exception e) { Log.e(TAG, "",e); }
+
+        File tmpBook = new File(targetFilePath);
+        if(tmpBook.exists()) tmpBook.delete();
+
+        return list;
     }
 
 }
