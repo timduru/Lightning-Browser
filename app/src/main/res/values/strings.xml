@@ -17,7 +17,7 @@
 
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 
-    <string name="app_name">Browser</string>
+    <string name="app_name">KatBrowser</string>
     <string name="app_name_old">Lightning</string>
     <string name="action_new_tab">New Tab</string>
     <string name="action_share">Share</string>
@@ -260,4 +260,5 @@
     <string name="dialog_remove_folder">Remove folder</string>
     <string name="dialog_title_close_browser">Close browser</string>
     <string name="pieControl">Enable Pie Control on sides of screen</string>
+    <string name="based_on">Based on Lightning browser by:</string>
 </resources>
