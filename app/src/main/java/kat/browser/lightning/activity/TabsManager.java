@@ -565,4 +565,10 @@ public class TabsManager {
         }
     }
 
+    public void reloadAll() {
+        for (LightningView tab : mTabList) {
+            if (tab != null)
+                tab.reload();
+        }
+    }
 }

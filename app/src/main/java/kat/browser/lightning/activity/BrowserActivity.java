@@ -750,8 +750,10 @@ public abstract class BrowserActivity extends ThemableBrowserActivity implements
                     closeBrowser();
                     return true;
                 case KeyEvent.KEYCODE_R:
-                    // Refresh current tab
-                    mTabsManager.getCurrentTab().reload();
+                    if(event.isShiftPressed()) // Refresh all tabs
+                        mTabsManager.reloadAll();
+                    else // Refresh current tab
+                        mTabsManager.getCurrentTab().reload();
                     return true;
                 case KeyEvent.KEYCODE_TAB:
                     int nextIndex = 0;
@@ -1204,7 +1206,9 @@ public abstract class BrowserActivity extends ThemableBrowserActivity implements
 
     // TODO move to presenter
     private synchronized boolean newTab(String url, boolean show) {
-        return mPresenter.newTab(url, show);
+        boolean res = mPresenter.newTab(url, show);
+        if(res && show) focusSearchBar();
+        return res;
     }
 
     // TODO move this to presenter
