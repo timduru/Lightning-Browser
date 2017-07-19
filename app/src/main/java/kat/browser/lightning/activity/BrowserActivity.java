@@ -737,6 +737,9 @@ public abstract class BrowserActivity extends ThemableBrowserActivity implements
         // Keyboard shortcuts
         if (event.isCtrlPressed() && event.getAction() == KeyEvent.ACTION_DOWN) {
             switch(event.getKeyCode()) {
+                case KeyEvent.KEYCODE_F:
+                    findInPage();
+                    return true;
                 case KeyEvent.KEYCODE_T:
                     // Open new tab
                     newTab(null, true);
