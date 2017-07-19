@@ -12,7 +12,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.sqlite.SQLiteException;
 import android.graphics.Bitmap;
@@ -212,7 +211,11 @@ public abstract class BrowserActivity extends ThemableBrowserActivity implements
 
 
     private PieControl mPieControl;
+    public boolean mIsCtrlPressed = false;
+    public boolean mIsShiftPressed = false;
 
+    public boolean isCtrlPressed() { return mIsCtrlPressed; }
+    public boolean isShiftPressed() { return mIsShiftPressed; }
     // Proxy
     @Inject ProxyUtils mProxyUtils;
 
@@ -735,7 +738,9 @@ public abstract class BrowserActivity extends ThemableBrowserActivity implements
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         // Keyboard shortcuts
-        if (event.isCtrlPressed() && event.getAction() == KeyEvent.ACTION_DOWN) {
+        mIsCtrlPressed = event.isCtrlPressed() && event.getAction() == KeyEvent.ACTION_DOWN;
+        mIsShiftPressed = event.isShiftPressed() && event.getAction() == KeyEvent.ACTION_DOWN;
+        if (mIsCtrlPressed ) {
             switch(event.getKeyCode()) {
                 case KeyEvent.KEYCODE_F:
                     findInPage();
@@ -1210,7 +1215,7 @@ public abstract class BrowserActivity extends ThemableBrowserActivity implements
     // TODO move to presenter
     private synchronized boolean newTab(String url, boolean show) {
         boolean res = mPresenter.newTab(url, show);
-        if(res && show) focusSearchBar();
+        if(res && show && url == null) focusSearchBar(); // new empty tab
         return res;
     }
 

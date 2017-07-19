@@ -27,6 +27,8 @@ import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
+import com.squareup.otto.Bus;
+
 import java.io.ByteArrayInputStream;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -37,6 +39,7 @@ import javax.inject.Inject;
 
 import kat.browser.lightning.R;
 import kat.browser.lightning.app.BrowserApp;
+import kat.browser.lightning.bus.BrowserEvents;
 import kat.browser.lightning.constant.Constants;
 import kat.browser.lightning.controller.UIController;
 import kat.browser.lightning.dialog.BrowserDialog;
@@ -55,6 +58,8 @@ public class LightningWebClient extends WebViewClient {
 
     @Inject ProxyUtils mProxyUtils;
     @Inject AdBlock mAdBlock;
+    @Inject
+    Bus mEventBus;
 
     LightningWebClient(@NonNull Activity activity, @NonNull LightningView lightningView) {
         BrowserApp.getAppComponent().inject(this);
@@ -297,8 +302,8 @@ public class LightningWebClient extends WebViewClient {
             return true;
         }
 
-        Map<String, String> headers = mLightningView.getRequestHeaders();
 
+        Map<String, String> headers = mLightningView.getRequestHeaders();
         // If the headers are empty, the user has not expressed the desire
         // to use them and therefore we can revert back to the old way of loading
         if (headers.isEmpty()) {
@@ -313,6 +318,17 @@ public class LightningWebClient extends WebViewClient {
 
             if (isMailOrIntent(url, view) || mIntentUtils.startActivityForUrl(view, url)) {
                 // If it was a mailto: link, or an intent, or could be launched elsewhere, do that
+                return true;
+            }
+
+            if(mUIController.isShiftPressed())
+            {
+                mEventBus.post(new BrowserEvents.OpenUrlInNewTab(url));
+                return true;
+            }
+            else if(mUIController.isCtrlPressed())
+            {
+                mEventBus.post(new BrowserEvents.OpenUrlInNewTab(url, BrowserEvents.OpenUrlInNewTab.Location.BACKGROUND));
                 return true;
             }
         } else {

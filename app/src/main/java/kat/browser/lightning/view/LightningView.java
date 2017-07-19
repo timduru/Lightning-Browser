@@ -45,6 +45,7 @@ import java.util.Map;
 import javax.inject.Inject;
 
 import kat.browser.lightning.app.BrowserApp;
+import kat.browser.lightning.bus.BrowserEvents;
 import kat.browser.lightning.constant.BookmarkPage;
 import kat.browser.lightning.constant.Constants;
 import kat.browser.lightning.constant.HistoryPage;
